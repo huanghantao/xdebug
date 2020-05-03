@@ -315,7 +315,7 @@ static void xdebug_execute_ex(zend_execute_data *execute_data)
 
 	if (XG_BASE(in_execution)) {
 		/* Start debugger if this is the first main script */
-		if (CUR_XG(level) == 0) {
+		if (CUR_XG(cid) == 0 && CUR_XG(level) == 0) {
 			/* Start remote context if requested */
 			xdebug_do_req();
 
