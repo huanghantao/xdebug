@@ -55,8 +55,11 @@ function_stack_entry *xdebug_get_stack_head(void)
 {
 	xdebug_llist_element *le;
 
-	if (XG_BASE(stack)) {
-		if ((le = XDEBUG_LLIST_HEAD(XG_BASE(stack)))) {
+	GET_CUR_CONTEXT_BEGIN;
+	GET_CUR_CONTEXT_END;
+
+	if (CUR_XG(stack)) {
+		if ((le = XDEBUG_LLIST_HEAD(CUR_XG(stack)))) {
 			return XDEBUG_LLIST_VALP(le);
 		} else {
 			return NULL;
@@ -70,11 +73,14 @@ function_stack_entry *xdebug_get_stack_frame(int nr)
 {
 	xdebug_llist_element *le;
 
-	if (!XG_BASE(stack)) {
+	GET_CUR_CONTEXT_BEGIN;
+	GET_CUR_CONTEXT_END;
+
+	if (!CUR_XG(stack)) {
 		return NULL;
 	}
 
-	if (!(le = XDEBUG_LLIST_TAIL(XG_BASE(stack)))) {
+	if (!(le = XDEBUG_LLIST_TAIL(CUR_XG(stack)))) {
 		return NULL;
 	}
 
@@ -96,8 +102,11 @@ function_stack_entry *xdebug_get_stack_tail(void)
 {
 	xdebug_llist_element *le;
 
-	if (XG_BASE(stack)) {
-		if ((le = XDEBUG_LLIST_TAIL(XG_BASE(stack)))) {
+	GET_CUR_CONTEXT_BEGIN;
+	GET_CUR_CONTEXT_END;
+
+	if (CUR_XG(stack)) {
+		if ((le = XDEBUG_LLIST_TAIL(CUR_XG(stack)))) {
 			return XDEBUG_LLIST_VALP(le);
 		} else {
 			return NULL;

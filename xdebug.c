@@ -214,7 +214,7 @@ zend_function_entry xdebug_functions[] = {
 
 zend_module_entry xdebug_module_entry = {
 	STANDARD_MODULE_HEADER,
-	"xdebug",
+	"sdebug",
 	xdebug_functions,
 	PHP_MINIT(xdebug),
 	PHP_MSHUTDOWN(xdebug),
@@ -368,9 +368,7 @@ PHP_INI_BEGIN()
 PHP_INI_END()
 
 static void xdebug_init_base_globals(struct xdebug_base_info *xg)
-{
-	xg->level                = 0;
-	xg->stack                = NULL;
+{	
 	xg->headers              = NULL;
 	xg->in_debug_info        = 0;
 	xg->output_is_tty        = OUTPUT_NOT_CHECKED;
@@ -550,6 +548,11 @@ PHP_MINIT_FUNCTION(xdebug)
 	xdebug_profiler_minit();
 	xdebug_tracing_minit(INIT_FUNC_ARGS_PASSTHRU);
 
+	/**
+	 * Get Swoole ZEND_EXIT opcode handler
+	 */
+	ori_exit_handler = zend_get_user_opcode_handler(ZEND_EXIT);
+
 	/* Overload the "exit" opcode */
 	XDEBUG_SET_OPCODE_OVERRIDE_ASSIGN(exit, ZEND_EXIT);
 
@@ -616,6 +619,8 @@ PHP_RINIT_FUNCTION(xdebug)
 	CG(compiler_options) = CG(compiler_options) | ZEND_COMPILE_EXTENDED_STMT;
 
 	xdebug_base_rinit();
+
+	sdebug_init();
 
 	return SUCCESS;
 }
@@ -1029,6 +1034,8 @@ ZEND_DLEXPORT int xdebug_zend_startup(zend_extension *extension)
 	xdebug_debugger_zend_startup();
 
 	zend_xdebug_initialised = 1;
+
+	zend_hash_init(&XG(contexts), 32, NULL, ZVAL_PTR_DTOR, 0);
 
 #if PHP_VERSION_ID >= 70300
 	xdebug_orig_post_startup_cb = zend_post_startup_cb;

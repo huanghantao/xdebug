@@ -73,3 +73,5 @@ tags
 *.sh
 phpt.*
 /C:\\Windows\\Temp\\remote-log4.txt
+
+/.vscode

@@ -19,7 +19,7 @@
 #ifndef PHP_XDEBUG_H
 #define PHP_XDEBUG_H
 
-#define XDEBUG_NAME       "Xdebug"
+#define XDEBUG_NAME       "Sdebug"
 #define XDEBUG_VERSION    "3.0.0-dev"
 #define XDEBUG_AUTHOR     "Derick Rethans"
 #define XDEBUG_COPYRIGHT  "Copyright (c) 2002-2020 by Derick Rethans"
@@ -39,6 +39,7 @@
 #include "lib/compat.h"
 #include "lib/hash.h"
 #include "lib/llist.h"
+#include "sdebug.h"
 
 extern zend_module_entry xdebug_module_entry;
 #define phpext_xdebug_ptr &xdebug_module_entry
@@ -141,10 +142,7 @@ PHP_FUNCTION(xdebug_time_index);
 PHP_FUNCTION(xdebug_set_filter);
 
 struct xdebug_base_info {
-	unsigned long level;
-	xdebug_llist *stack;
 	double        start_time;
-	unsigned int  prev_memory;
 	zif_handler   orig_var_dump_func;
 	zif_handler   orig_set_time_limit_func;
 	zif_handler   orig_error_reporting_func;
@@ -232,7 +230,23 @@ struct xdebug_base_info {
 	} settings;
 };
 
+struct zend_xdebug_context {
+	long cid;
+
+	unsigned long level;
+	xdebug_llist  *stack;
+
+	unsigned int  prev_memory;
+
+	xdebug_path_info *paths_stack;
+	struct {
+		unsigned int  size;
+		int *last_branch_nr;
+	} branches;
+};
+
 ZEND_BEGIN_MODULE_GLOBALS(xdebug)
+	HashTable         contexts;
 	struct xdebug_base_info     base;
 	struct {
 		xdebug_coverage_globals_t coverage;
