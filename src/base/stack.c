@@ -109,7 +109,7 @@ void xdebug_log_stack(const char *error_type_str, char *buffer, const char *erro
 	php_log_err(tmp_log_message);
 	xdfree(tmp_log_message);
 
-	if (CUR_XG(stack) && CUR_XG(stack)->size) {
+	if (CUR_CONTEXT && CUR_XG(stack) && CUR_XG(stack)->size) {
 		php_log_err((char*) "PHP Stack trace:");
 
 		for (le = XDEBUG_LLIST_HEAD(CUR_XG(stack)); le != NULL; le = XDEBUG_LLIST_NEXT(le))
@@ -334,7 +334,7 @@ void xdebug_append_printable_stack(xdebug_str *str, int html)
 	GET_CUR_CONTEXT_BEGIN;
 	GET_CUR_CONTEXT_END;
 
-	if (CUR_XG(stack) && CUR_XG(stack)->size) {
+	if (CUR_CONTEXT && CUR_XG(stack) && CUR_XG(stack)->size) {
 		i = XDEBUG_LLIST_VALP(XDEBUG_LLIST_HEAD(CUR_XG(stack)));
 
 		xdebug_str_add(str, formats[2], 0);

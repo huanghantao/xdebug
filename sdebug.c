@@ -64,7 +64,7 @@ struct zend_xdebug_context *get_current_context()
 {
 	zval *val = zend_hash_index_find(&XG(contexts), get_cid());
 
-	return (struct zend_xdebug_context *) Z_PTR_P(val);
+	return val ? (struct zend_xdebug_context *) Z_PTR_P(val) : NULL;
 }
 
 void remove_current_context()

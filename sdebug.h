@@ -10,6 +10,7 @@ struct zend_xdebug_context *get_current_context();
 
 #define GET_CUR_CONTEXT_BEGIN struct zend_xdebug_context *_context;
 #define GET_CUR_CONTEXT_END _context = get_current_context();
+#define CUR_CONTEXT _context
 
 #define ADD_CUR_CONTEXT add_current_context()
 #define REMOVE_CUR_CONTEXT remove_current_context()
