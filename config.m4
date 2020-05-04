@@ -6,6 +6,8 @@ PHP_ARG_ENABLE(xdebug, whether to enable Xdebug support,
 PHP_ARG_ENABLE(xdebug-dev, whether to enable Xdebug developer build flags,
 [  --enable-xdebug-dev       Xdebug: Enable developer flags],, no)
 
+PHP_ARG_ENABLE(swoole, whether to enable Swoole support,
+[  --enable-swoole       Sdebug: Enable Swoole support],, no)
 
 if test "$PHP_XDEBUG" != "no"; then
   AC_MSG_CHECKING([Check for supported PHP versions])
@@ -75,6 +77,10 @@ if test "$PHP_XDEBUG" != "no"; then
     STD_CFLAGS="-g -O0 -Wall"
   fi
 
+  if test "$PHP_SWOOLE" = "yes"; then
+    AC_DEFINE([HAVE_SWOOLE],1,[enable debug swoole?])
+  fi
+
   PHP_XDEBUG_CFLAGS="$STD_CFLAGS $MAINTAINER_CFLAGS"
 
   XDEBUG_BASE_SOURCES="src/base/base.c src/base/filter.c src/base/monitor.c src/base/stack.c src/base/superglobals.c"
@@ -86,7 +92,7 @@ if test "$PHP_XDEBUG" != "no"; then
   XDEBUG_PROFILER_SOURCES="src/profiler/profiler.c"
   XDEBUG_TRACING_SOURCES="src/tracing/trace_computerized.c src/tracing/trace_html.c src/tracing/trace_textual.c src/tracing/tracing.c"
 
-  PHP_NEW_EXTENSION(sdebug, sdebug.c xdebug.c $XDEBUG_BASE_SOURCES $XDEBUG_LIB_SOURCES $XDEBUG_COVERAGE_SOURCES $XDEBUG_DEBUGGER_SOURCES $XDEBUG_GCSTATS_SOURCES $XDEBUG_PROFILER_SOURCES $XDEBUG_TRACING_SOURCES, $ext_shared,,$PHP_XDEBUG_CFLAGS,,yes)
+  PHP_NEW_EXTENSION(xdebug, sdebug.c xdebug.c $XDEBUG_BASE_SOURCES $XDEBUG_LIB_SOURCES $XDEBUG_COVERAGE_SOURCES $XDEBUG_DEBUGGER_SOURCES $XDEBUG_GCSTATS_SOURCES $XDEBUG_PROFILER_SOURCES $XDEBUG_TRACING_SOURCES, $ext_shared,,$PHP_XDEBUG_CFLAGS,,yes)
   PHP_ADD_BUILD_DIR(PHP_EXT_BUILDDIR(xdebug)[/src/base])
   PHP_ADD_BUILD_DIR(PHP_EXT_BUILDDIR(xdebug)[/src/lib])
   PHP_ADD_BUILD_DIR(PHP_EXT_BUILDDIR(xdebug)[/src/coverage])

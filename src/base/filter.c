@@ -40,10 +40,13 @@ int xdebug_is_top_stack_frame_filtered(int filter_type)
 {
 	function_stack_entry *fse;
 
+	#if HAVE_SWOOLE
 	GET_CUR_CONTEXT_BEGIN;
 	GET_CUR_CONTEXT_END;
-
 	fse = XDEBUG_LLIST_VALP(XDEBUG_LLIST_TAIL(CUR_XG(stack)));
+	#endif
+
+	fse = XDEBUG_LLIST_VALP(XDEBUG_LLIST_TAIL(XG_BASE(stack)));
 	return xdebug_is_stack_frame_filtered(filter_type, fse);
 }
 

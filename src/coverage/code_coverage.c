@@ -560,10 +560,13 @@ static void xdebug_prefill_code_coverage(zend_op_array *op_array)
 void xdebug_code_coverage_start_of_function(zend_op_array *op_array, char *function_name)
 {
 	xdebug_path *path = xdebug_path_new(NULL);
+	#if HAVE_SWOOLE
 	GET_CUR_CONTEXT_BEGIN;
 	GET_CUR_CONTEXT_END;
+	#endif
 
 	xdebug_prefill_code_coverage(op_array);
+	#if HAVE_SWOOLE
 	xdebug_path_info_add_path_for_level(CUR_XG(paths_stack), path, CUR_XG(level));
 
 	if (CUR_XG(branches).size == 0 || CUR_XG(level) >= CUR_XG(branches).size) {
@@ -572,16 +575,32 @@ void xdebug_code_coverage_start_of_function(zend_op_array *op_array, char *funct
 	}
 
 	CUR_XG(branches).last_branch_nr[CUR_XG(level)] = -1;
+	#else
+	xdebug_path_info_add_path_for_level(XG_COV(paths_stack), path, XG_BASE(level));
+
+	if (XG_COV(branches).size == 0 || XG_BASE(level) >= XG_COV(branches).size) {
+		XG_COV(branches).size = XG_BASE(level) + 32;
+		XG_COV(branches).last_branch_nr = realloc(XG_COV(branches).last_branch_nr, sizeof(int) * XG_COV(branches.size));
+	}
+
+	XG_COV(branches).last_branch_nr[XG_BASE(level)] = -1;
+	#endif
 }
 
 void xdebug_code_coverage_end_of_function(zend_op_array *op_array, char *file_name, char *function_name)
 {
 	xdebug_str str = XDEBUG_STR_INITIALIZER;
 	xdebug_path *path;
+	#if HAVE_SWOOLE
 	GET_CUR_CONTEXT_BEGIN;
 	GET_CUR_CONTEXT_END;
+	#endif
 
+	#if HAVE_SWOOLE
 	path = xdebug_path_info_get_path_for_level(CUR_XG(paths_stack), CUR_XG(level));
+	#else
+	path = xdebug_path_info_get_path_for_level(XG_COV(paths_stack), XG_BASE(level));
+	#endif
 
 	if (!path) {
 		return;
@@ -621,8 +640,10 @@ PHP_FUNCTION(xdebug_start_code_coverage)
 PHP_FUNCTION(xdebug_stop_code_coverage)
 {
 	zend_long cleanup = 1;
+	#if HAVE_SWOOLE
 	GET_CUR_CONTEXT_BEGIN;
 	GET_CUR_CONTEXT_END;
+	#endif
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|l", &cleanup) == FAILURE) {
 		return;
@@ -636,8 +657,13 @@ PHP_FUNCTION(xdebug_stop_code_coverage)
 			xdebug_hash_destroy(XG_COV(code_coverage_info));
 			XG_COV(code_coverage_info) = xdebug_hash_alloc(32, xdebug_coverage_file_dtor);
 			XG_COV(dead_code_last_start_id)++;
+			#if HAVE_SWOOLE
 			xdebug_path_info_dtor(CUR_XG(paths_stack));
 			CUR_XG(paths_stack) = xdebug_path_info_ctor();
+			#else
+			xdebug_path_info_dtor(XG_COV(paths_stack));
+			XG_COV(paths_stack) = xdebug_path_info_ctor();
+			#endif
 		}
 		XG_COV(code_coverage_active) = 0;
 		RETURN_TRUE;
@@ -843,6 +869,11 @@ void xdebug_init_coverage_globals(xdebug_coverage_globals_t *xg)
 	xg->previous_file        = NULL;
 	xg->previous_mark_filename = NULL;
 	xg->previous_mark_file     = NULL;
+	#ifndef HAVE_SWOOLE
+	xg->paths_stack = NULL;
+	xg->branches.size        = 0;
+	xg->branches.last_branch_nr = NULL;
+	#endif
 	xg->code_coverage_active = 0;
 
 	/* Get reserved offset */
@@ -1094,6 +1125,11 @@ void xdebug_coverage_rinit(void)
 	/* Initialize visited classes and branches hash */
 	XG_COV(visited_branches) = xdebug_hash_alloc(2048, NULL);
 
+	#ifndef HAVE_SWOOLE
+	XG_COV(paths_stack) = xdebug_path_info_ctor();
+	XG_COV(branches).size = 0;
+	XG_COV(branches).last_branch_nr = NULL;
+	#endif
 }
 
 void xdebug_coverage_post_deactivate(void)
@@ -1106,5 +1142,17 @@ void xdebug_coverage_post_deactivate(void)
 	xdebug_hash_destroy(XG_COV(visited_branches));
 	XG_COV(visited_branches) = NULL;
 
+	#ifndef HAVE_SWOOLE
+	/* Clean up path coverage array */
+	if (XG_COV(paths_stack)) {
+		xdebug_path_info_dtor(XG_COV(paths_stack));
+		XG_COV(paths_stack) = NULL;
+	}
+	if (XG_COV(branches).last_branch_nr) {
+		free(XG_COV(branches).last_branch_nr);
+		XG_COV(branches).last_branch_nr = NULL;
+		XG_COV(branches).size = 0;
+	}
+	#endif
 	XG_COV(previous_mark_filename) = NULL;
 }

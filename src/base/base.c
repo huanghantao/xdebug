@@ -163,7 +163,11 @@ static void xdebug_declared_var_dtor(void *dummy, void *elem)
 	xdebug_str_free(s);
 }
 
+#if HAVE_SWOOLE
 void function_stack_entry_dtor(void *dummy, void *elem)
+#else
+static void function_stack_entry_dtor(void *dummy, void *elem)
+#endif
 {
 	unsigned int          i;
 	function_stack_entry *e = elem;
@@ -258,9 +262,11 @@ int xdebug_exit_handler(XDEBUG_OPCODE_HANDLER_ARGS)
 {
 	const zend_op *cur_opcode = execute_data->opline;
 
+	#if HAVE_SWOOLE
 	if (ori_exit_handler) {
 		ori_exit_handler(execute_data);
 	}
+	#endif
 
 	xdebug_profiler_exit_handler();
 
@@ -279,6 +285,7 @@ static void xdebug_execute_ex(zend_execute_data *execute_data)
 	char                 *code_coverage_file_name = NULL;
 	int                   code_coverage_init = 0;
 
+	#if HAVE_SWOOLE
 	int do_remove_context = 0;
 
 	GET_CUR_CONTEXT_BEGIN;
@@ -286,6 +293,7 @@ static void xdebug_execute_ex(zend_execute_data *execute_data)
 		do_remove_context = 1;
 	}
 	GET_CUR_CONTEXT_END;
+	#endif
 
 	/* For PHP 7, we need to reset the opline to the start, so that all opcode
 	 * handlers are being hit. But not for generators, as that would make an
@@ -315,7 +323,11 @@ static void xdebug_execute_ex(zend_execute_data *execute_data)
 
 	if (XG_BASE(in_execution)) {
 		/* Start debugger if this is the first main script */
+		#if HAVE_SWOOLE
 		if (CUR_XG(cid) == 0 && CUR_XG(level) == 0) {
+		#else
+		if (XG_BASE(level) == 0) {
+		#endif
 			/* Start remote context if requested */
 			xdebug_do_req();
 
@@ -325,8 +337,17 @@ static void xdebug_execute_ex(zend_execute_data *execute_data)
 		}
 	}
 
+	#if HAVE_SWOOLE
 	CUR_XG(level)++;
+	#else
+	XG_BASE(level)++;
+	#endif
+
+	#if HAVE_SWOOLE
 	if ((signed long) CUR_XG(level) > XINI_BASE(max_nesting_level) && (XINI_BASE(max_nesting_level) != -1)) {
+	#else
+	if ((signed long) XG_BASE(level) > XINI_BASE(max_nesting_level) && (XINI_BASE(max_nesting_level) != -1)) {
+	#endif
 		zend_throw_exception_ex(zend_ce_error, 0, "Maximum function nesting level of '" ZEND_LONG_FMT "' reached, aborting!", XINI_BASE(max_nesting_level));
 	}
 
@@ -352,14 +373,19 @@ static void xdebug_execute_ex(zend_execute_data *execute_data)
 		fse->This = NULL;
 	}
 
+	#if HAVE_SWOOLE
 	if (CUR_XG(stack) && (XINI_BASE(collect_vars) || XINI_BASE(show_local_vars) || xdebug_is_debug_connection_active())) {
+		for (le = XDEBUG_LLIST_TAIL(CUR_XG(stack)); le != NULL; le = XDEBUG_LLIST_PREV(le)) {
+	#else
+	if (XG_BASE(stack) && (XINI_BASE(collect_vars) || XINI_BASE(show_local_vars) || xdebug_is_debug_connection_active())) {
 		/* Because include/require is treated as a stack level, we have to add used
 		 * variables in include/required files to all the stack levels above, until
 		 * we hit a function or the top level stack.  This is so that the variables
 		 * show up correctly where they should be.  We always call
 		 * add_used_variables on the current stack level, otherwise vars in include
 		 * files do not show up in the locals list.  */
-		for (le = XDEBUG_LLIST_TAIL(CUR_XG(stack)); le != NULL; le = XDEBUG_LLIST_PREV(le)) {
+		for (le = XDEBUG_LLIST_TAIL(XG_BASE(stack)); le != NULL; le = XDEBUG_LLIST_PREV(le)) {
+	#endif
 			xfse = XDEBUG_LLIST_VALP(le);
 			add_used_variables(xfse, op_array);
 			if (XDEBUG_IS_NORMAL_FUNCTION(&xfse->function)) {
@@ -399,13 +425,27 @@ static void xdebug_execute_ex(zend_execute_data *execute_data)
 	fse->symbol_table = NULL;
 	fse->execute_data = NULL;
 
+	#if HAVE_SWOOLE
 	if (CUR_XG(stack)) {
 		xdebug_llist_remove(CUR_XG(stack), XDEBUG_LLIST_TAIL(CUR_XG(stack)), function_stack_entry_dtor);
 	}
+	#else
+	if (XG_BASE(stack)) {
+		xdebug_llist_remove(XG_BASE(stack), XDEBUG_LLIST_TAIL(XG_BASE(stack)), function_stack_entry_dtor);
+	}
+	#endif
+
+	#if HAVE_SWOOLE
 	CUR_XG(level)--;
+	#else
+	XG_BASE(level)--;
+	#endif
+
+	#if HAVE_SWOOLE
 	if (do_remove_context) {
 		REMOVE_CUR_CONTEXT;
 	}
+	#endif
 }
 
 static int check_soap_call(function_stack_entry *fse, zend_execute_data *execute_data)
@@ -444,6 +484,7 @@ static void xdebug_execute_internal(zend_execute_data *current_execute_data, zva
 	int                   restore_error_handler_situation = 0;
 	void                (*tmp_error_cb)(int type, const char *error_filename, const XDEBUG_ERROR_LINENO_TYPE error_lineno, const char *format, va_list args) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 4, 0) = NULL;
 
+	#if HAVE_SWOOLE
 	int do_remove_context = 0;
 
 	GET_CUR_CONTEXT_BEGIN;
@@ -451,9 +492,15 @@ static void xdebug_execute_internal(zend_execute_data *current_execute_data, zva
 		do_remove_context = 1;
 	}
 	GET_CUR_CONTEXT_END;
+	#endif
 
+	#if HAVE_SWOOLE
 	CUR_XG(level)++;
 	if ((signed long) CUR_XG(level) > XINI_BASE(max_nesting_level) && (XINI_BASE(max_nesting_level) != -1)) {
+	#else
+	XG_BASE(level)++;
+	if ((signed long) XG_BASE(level) > XINI_BASE(max_nesting_level) && (XINI_BASE(max_nesting_level) != -1)) {
+	#endif
 		zend_throw_exception_ex(zend_ce_error, 0, "Maximum function nesting level of '" ZEND_LONG_FMT "' reached, aborting!", XINI_BASE(max_nesting_level));
 	}
 
@@ -499,6 +546,7 @@ static void xdebug_execute_internal(zend_execute_data *current_execute_data, zva
 	/* Check for return breakpoints */
 	xdebug_debugger_handle_breakpoints(fse, XDEBUG_BREAKPOINT_TYPE_RETURN);
 
+	#if HAVE_SWOOLE
 	if (CUR_XG(stack)) {
 		xdebug_llist_remove(CUR_XG(stack), XDEBUG_LLIST_TAIL(CUR_XG(stack)), function_stack_entry_dtor);
 	}
@@ -506,6 +554,12 @@ static void xdebug_execute_internal(zend_execute_data *current_execute_data, zva
 	if (do_remove_context) {
 		REMOVE_CUR_CONTEXT;
 	}
+	#else
+	if (XG_BASE(stack)) {
+		xdebug_llist_remove(XG_BASE(stack), XDEBUG_LLIST_TAIL(XG_BASE(stack)), function_stack_entry_dtor);
+	}
+	XG_BASE(level)--;
+	#endif
 }
 
 static void xdebug_overloaded_functions_setup(void)
@@ -641,7 +695,16 @@ void xdebug_base_rinit()
 		zend_throw_exception_hook = xdebug_throw_exception_hook;
 	}
 
+	#if HAVE_SWOOLE
+	#else
+	XG_BASE(stack) = xdebug_llist_alloc(function_stack_entry_dtor);
+	XG_BASE(level)         = 0;
+	#endif
 	XG_BASE(in_debug_info) = 0;
+	#if HAVE_SWOOLE
+	#else
+	XG_BASE(prev_memory)   = 0;
+	#endif
 	XG_BASE(function_count) = -1;
 	XG_BASE(last_exception_trace) = NULL;
 	XG_BASE(last_eval_statement) = NULL;
@@ -677,6 +740,12 @@ void xdebug_base_rinit()
 
 void xdebug_base_post_deactivate()
 {
+	#ifndef HAVE_SWOOLE
+	xdebug_llist_destroy(XG_BASE(stack), NULL);
+	XG_BASE(stack) = NULL;
+
+	XG_BASE(level)            = 0;
+	#endif
 	XG_BASE(in_debug_info)    = 0;
 
 	if (XG_BASE(last_exception_trace)) {
@@ -716,6 +785,7 @@ void xdebug_base_post_deactivate()
 
 void xdebug_base_rshutdown()
 {
+	/* Signal that we're no longer in a request */
 	XG_BASE(in_execution) = 0;
 }
 

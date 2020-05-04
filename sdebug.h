@@ -1,3 +1,5 @@
+#include "config.h"
+#if HAVE_SWOOLE
 #ifndef SDEBUG_H
 #define SDEBUG_H
 
@@ -18,4 +20,4 @@ struct zend_xdebug_context *get_current_context();
 #define CUR_XG(v) (_context->v)
 
 #endif
-
+#endif

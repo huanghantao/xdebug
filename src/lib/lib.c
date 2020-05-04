@@ -55,6 +55,7 @@ function_stack_entry *xdebug_get_stack_head(void)
 {
 	xdebug_llist_element *le;
 
+	#if HAVE_SWOOLE
 	GET_CUR_CONTEXT_BEGIN;
 	GET_CUR_CONTEXT_END;
 
@@ -67,15 +68,29 @@ function_stack_entry *xdebug_get_stack_head(void)
 	} else {
 		return NULL;
 	}
+	#else
+	if (XG_BASE(stack)) {
+		if ((le = XDEBUG_LLIST_HEAD(XG_BASE(stack)))) {
+			return XDEBUG_LLIST_VALP(le);
+		} else {
+			return NULL;
+		}
+	} else {
+		return NULL;
+	}
+	#endif
 }
 
 function_stack_entry *xdebug_get_stack_frame(int nr)
 {
 	xdebug_llist_element *le;
 
+	#if HAVE_SWOOLE
 	GET_CUR_CONTEXT_BEGIN;
 	GET_CUR_CONTEXT_END;
+	#endif
 
+	#if HAVE_SWOOLE
 	if (!CUR_XG(stack)) {
 		return NULL;
 	}
@@ -83,6 +98,15 @@ function_stack_entry *xdebug_get_stack_frame(int nr)
 	if (!(le = XDEBUG_LLIST_TAIL(CUR_XG(stack)))) {
 		return NULL;
 	}
+	#else
+	if (!XG_BASE(stack)) {
+		return NULL;
+	}
+
+	if (!(le = XDEBUG_LLIST_TAIL(XG_BASE(stack)))) {
+		return NULL;
+	}
+	#endif
 
 	if (nr < 0) {
 		return NULL;
@@ -102,9 +126,12 @@ function_stack_entry *xdebug_get_stack_tail(void)
 {
 	xdebug_llist_element *le;
 
+	#if HAVE_SWOOLE
 	GET_CUR_CONTEXT_BEGIN;
 	GET_CUR_CONTEXT_END;
+	#endif
 
+	#if HAVE_SWOOLE
 	if (CUR_XG(stack)) {
 		if ((le = XDEBUG_LLIST_TAIL(CUR_XG(stack)))) {
 			return XDEBUG_LLIST_VALP(le);
@@ -114,6 +141,17 @@ function_stack_entry *xdebug_get_stack_tail(void)
 	} else {
 		return NULL;
 	}
+	#else
+	if (XG_BASE(stack)) {
+		if ((le = XDEBUG_LLIST_TAIL(XG_BASE(stack)))) {
+			return XDEBUG_LLIST_VALP(le);
+		} else {
+			return NULL;
+		}
+	} else {
+		return NULL;
+	}
+	#endif
 }
 
 static void xdebug_used_var_hash_from_llist_dtor(void *data)

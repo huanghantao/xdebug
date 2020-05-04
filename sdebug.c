@@ -1,3 +1,7 @@
+#include "config.h"
+
+#if HAVE_SWOOLE
+
 #include "php_xdebug.h"
 
 ZEND_EXTERN_MODULE_GLOBALS(xdebug);
@@ -94,3 +98,5 @@ void remove_current_context()
 
 	zend_hash_index_del(&XG(contexts), cid);
 }
+
+#endif // HAVE_SWOOLE

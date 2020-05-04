@@ -6,7 +6,7 @@ Sdebug (Swoole debug) is a fork of xdebug in order for xdebug to support Swoole.
 
 ```bash
 phpize \
-&& ./configure \
+&& ./configure --enable-swoole \
 && make clean \
 && make all \
 && make install
@@ -18,5 +18,5 @@ Then you need to add the following line to your `php.ini` file, or create a new 
 needs the following line added:
 
 ```ini
-zend_extension=sdebug.so
+zend_extension=xdebug.so
 ```

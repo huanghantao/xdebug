@@ -505,8 +505,10 @@ static int xdebug_common_assign_dim_handler(const char *op, int do_cc, XDEBUG_OP
 	int            is_var;
 	function_stack_entry *fse;
 
+	#if HAVE_SWOOLE
 	GET_CUR_CONTEXT_BEGIN;
 	GET_CUR_CONTEXT_END;
+	#endif
 
 	cur_opcode = execute_data->opline;
 	next_opcode = cur_opcode + 1;
@@ -606,7 +608,11 @@ static int xdebug_common_assign_dim_handler(const char *op, int do_cc, XDEBUG_OP
 			val = xdebug_get_zval(execute_data, cur_opcode->op2_type, &cur_opcode->op2, &is_var);
 		}
 
+		#if HAVE_SWOOLE
 		fse = XDEBUG_LLIST_VALP(XDEBUG_LLIST_TAIL(CUR_XG(stack)));
+		#else
+		fse = XDEBUG_LLIST_VALP(XDEBUG_LLIST_TAIL(XG_BASE(stack)));
+		#endif
 		if (XG_TRACE(trace_context) && XINI_BASE(collect_assignments) && XG_TRACE(trace_handler)->assignment) {
 			XG_TRACE(trace_handler)->assignment(XG_TRACE(trace_context), fse, full_varname, val, right_full_varname, op, file, lineno);
 		}

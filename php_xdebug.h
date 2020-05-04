@@ -19,7 +19,13 @@
 #ifndef PHP_XDEBUG_H
 #define PHP_XDEBUG_H
 
+#include "config.h"
+
+#if HAVE_SWOOLE
 #define XDEBUG_NAME       "Sdebug"
+#else
+#define XDEBUG_NAME       "Xdebug"
+#endif
 #define XDEBUG_VERSION    "3.0.0-dev"
 #define XDEBUG_AUTHOR     "Derick Rethans"
 #define XDEBUG_COPYRIGHT  "Copyright (c) 2002-2020 by Derick Rethans"
@@ -142,7 +148,10 @@ PHP_FUNCTION(xdebug_time_index);
 PHP_FUNCTION(xdebug_set_filter);
 
 struct xdebug_base_info {
+	unsigned long level;
+	xdebug_llist *stack;
 	double        start_time;
+	unsigned int  prev_memory;
 	zif_handler   orig_var_dump_func;
 	zif_handler   orig_set_time_limit_func;
 	zif_handler   orig_error_reporting_func;
@@ -230,6 +239,7 @@ struct xdebug_base_info {
 	} settings;
 };
 
+#if HAVE_SWOOLE
 struct zend_xdebug_context {
 	long cid;
 
@@ -244,9 +254,12 @@ struct zend_xdebug_context {
 		int *last_branch_nr;
 	} branches;
 };
+#endif
 
 ZEND_BEGIN_MODULE_GLOBALS(xdebug)
+	#if HAVE_SWOOLE
 	HashTable         contexts;
+	#endif
 	struct xdebug_base_info     base;
 	struct {
 		xdebug_coverage_globals_t coverage;

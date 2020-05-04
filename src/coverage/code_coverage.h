@@ -43,7 +43,12 @@ typedef struct _xdebug_coverage_globals_t {
 	xdebug_coverage_file *previous_file;
 	char                 *previous_mark_filename;
 	xdebug_coverage_file *previous_mark_file;
+	xdebug_path_info     *paths_stack;
 	xdebug_hash          *visited_branches;
+	struct {
+		unsigned int  size;
+		int *last_branch_nr;
+	} branches;
 } xdebug_coverage_globals_t;
 
 typedef struct _xdebug_coverage_settings_t {
