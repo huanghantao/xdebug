@@ -654,6 +654,10 @@ PHP_RSHUTDOWN_FUNCTION(xdebug)
 {
 	xdebug_base_rshutdown();
 
+	#if HAVE_SWOOLE
+	zend_hash_destroy(&XG(contexts));
+	#endif
+
 	return SUCCESS;
 }
 
